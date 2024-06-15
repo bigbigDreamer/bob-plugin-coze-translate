@@ -1,0 +1,36 @@
+{
+    "identifier": "ryan.bob.plugin.coze.api.translate",
+    "version": "0.1.0",
+    "category": "translate",
+    "name": "bob-plugin-coze-translate",
+    "summary": "",
+    "icon": "",
+    "author": "",
+    "homepage": "",
+    "appcast": "",
+    "minBobVersion": "1.8.0",
+    "options": [
+        {
+            "identifier": "apiToken",
+            "type": "text",
+            "title": "API Token",
+            "desc": "必填项",
+            "textConfig": {
+                "type": "secure",
+                "height": "68",
+                "placeholderText": "pat-"
+            }
+        },
+        {
+            "identifier": "botId",
+            "type": "text",
+            "title": "BOT ID",
+            "desc": "必填项",
+            "textConfig": {
+                "type": "secure",
+                "height": "19",
+                "placeholderText": "xxxxxxxxxxxxxxxx"
+            }
+        }
+    ]
+}
