@@ -10,6 +10,7 @@
  * Bob 语言代码转服务商语言代码(以为 'zh-Hans' 为例): var lang = langMap.get('zh-Hans');
  * 服务商语言代码转 Bob 语言代码: var standardLang = langMapReverse.get('xxx');
  */
+var { pluginValidate, generateHeader, httpStreamHandler, generateBody} = require('./helper')
 
 var items = [
     ["auto", "auto"],
@@ -28,13 +29,26 @@ function supportLanguages() {
 }
 
 function translate(query, completion) {
+    (async () => {
+        await $http.streamRequest({
+            method: "POST",
+            url: "https://api.coze.cn/open_api/v2/chat",
+            header: generateHeader($option.apiToken),
+            body: {
+                ...generateBody($option.botId, `翻译成简体白话文：\n\n${query.text}}`)
+            },
+            cancelSignal: query.cancelSignal,
+            ...httpStreamHandler(query)
+        });
+    })()
 
-    // Bob 1.8.0+
-    query.onCompletion({'result': result});
-    // or
-    query.onCompletion({'error': error});
 }
 
 function pluginTimeoutInterval() {
     return 60;
 }
+
+exports.pluginTimeoutInterval = pluginTimeoutInterval;
+exports.pluginValidate = pluginValidate;
+exports.supportLanguages = supportLanguages;
+exports.translate = translate;
