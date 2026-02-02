@@ -1,47 +1,83 @@
 /**
- * 由于各大服务商的语言代码都不大一样，
- * 所以我定义了一份 Bob 专用的语言代码，以便 Bob 主程序和插件之间互传语种。
- * Bob 语言代码列表 https://ripperhe.gitee.io/bob/#/plugin/addtion/language
+ * Bob 插件 - Coze 翻译
+ * 使用 Coze API 进行智能翻译
  *
- * 转换的代码建议以下面的方式实现，
- * `xxx` 代表服务商特有的语言代码，请替换为真实的，
- * 具体支持的语种数量请根据实际情况而定。
- *
- * Bob 语言代码转服务商语言代码(以为 'zh-Hans' 为例): var lang = langMap.get('zh-Hans');
- * 服务商语言代码转 Bob 语言代码: var standardLang = langMapReverse.get('xxx');
+ * Bob 语言代码列表: https://bobtranslate.com/plugin/addition/language.html
  */
-var { pluginValidate, generateHeader, httpStreamHandler, generateBody} = require('./helper')
+var {
+    pluginValidate,
+    generateHeader,
+    httpStreamHandler,
+    httpHandler,
+    generateBody,
+    buildPrompt
+} = require('./helper');
 
-var items = [
-    ["auto", "auto"],
-    ["zh-Hans", "zh-CN"],
-    ["zh-Hant", "zh-TW"],
-    ["en", "en"],
-    ["en", "en"],
-    ["ja", "ja"],
-];
-
-var langMap = new Map(items);
-var langMapReverse = new Map(items.map(([standardLang, lang]) => [lang, standardLang]));
+// Bob 语言代码 -> 显示名称映射
+var langNames = {
+    "auto": "自动检测",
+    "zh-Hans": "简体中文",
+    "zh-Hant": "繁体中文",
+    "en": "英语",
+    "ja": "日语",
+    "ko": "韩语",
+    "fr": "法语",
+    "de": "德语",
+    "es": "西班牙语",
+    "pt": "葡萄牙语",
+    "it": "意大利语",
+    "ru": "俄语",
+    "ar": "阿拉伯语",
+    "th": "泰语",
+    "vi": "越南语",
+    "id": "印尼语",
+    "ms": "马来语",
+    "nl": "荷兰语",
+    "pl": "波兰语",
+    "tr": "土耳其语",
+    "uk": "乌克兰语",
+    "cs": "捷克语",
+    "el": "希腊语",
+    "he": "希伯来语",
+    "hi": "印地语",
+    "hu": "匈牙利语",
+    "sv": "瑞典语",
+    "da": "丹麦语",
+    "fi": "芬兰语",
+    "no": "挪威语",
+    "ro": "罗马尼亚语",
+    "sk": "斯洛伐克语",
+    "bg": "保加利亚语"
+};
 
 function supportLanguages() {
-    return items.map(([standardLang, lang]) => standardLang);
+    return Object.keys(langNames);
 }
 
 function translate(query, completion) {
-    (async () => {
-        await $http.streamRequest({
-            method: "POST",
-            url: "https://api.coze.cn/open_api/v2/chat",
-            header: generateHeader($option.apiToken),
-            body: {
-                ...generateBody($option.botId, `翻译成简体白话文：\n\n${query.text}}`)
-            },
-            cancelSignal: query.cancelSignal,
+    var apiEndpoint = $option.apiEndpoint || "https://api.coze.com";
+    var useStream = $option.streamOutput !== "false";
+    var prompt = buildPrompt(query, langNames, $option.customPrompt);
+
+    var requestConfig = {
+        method: "POST",
+        url: apiEndpoint + "/open_api/v2/chat",
+        header: generateHeader($option.apiToken),
+        body: generateBody($option.botId, prompt, useStream),
+        cancelSignal: query.cancelSignal
+    };
+
+    if (useStream) {
+        $http.streamRequest({
+            ...requestConfig,
             ...httpStreamHandler(query)
         });
-    })()
-
+    } else {
+        $http.request({
+            ...requestConfig,
+            handler: httpHandler(query)
+        });
+    }
 }
 
 function pluginTimeoutInterval() {

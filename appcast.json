@@ -1,0 +1,12 @@
+{
+    "identifier": "com.ryan.bob.coze.translate",
+    "versions": [
+        {
+            "version": "1.0.0",
+            "desc": "首个正式版本\n- 支持 30+ 种语言互译\n- 支持流式输出\n- 支持自定义提示词\n- 支持中国区和国际区 API",
+            "sha256": "",
+            "url": "https://github.com/ryanwang/bob-plugin-coze-translate/releases/download/v1.0.0/coze-translate.bobplugin",
+            "minBobVersion": "1.8.0"
+        }
+    ]
+}

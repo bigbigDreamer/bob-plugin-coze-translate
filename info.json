@@ -1,36 +1,70 @@
 {
-    "identifier": "ryan.bob.plugin.coze.api.translate",
-    "version": "0.1.0",
+    "identifier": "com.ryan.bob.coze.translate",
+    "version": "1.0.0",
     "category": "translate",
-    "name": "coze翻译",
-    "summary": "",
-    "icon": "",
-    "author": "",
-    "homepage": "",
-    "appcast": "",
+    "name": "Coze 翻译",
+    "summary": "使用 Coze API 进行智能翻译，支持流式输出",
+    "icon": "bot",
+    "author": "Ryan Wang",
+    "homepage": "https://github.com/ryanwang/bob-plugin-coze-translate",
+    "appcast": "https://raw.githubusercontent.com/ryanwang/bob-plugin-coze-translate/main/appcast.json",
     "minBobVersion": "1.8.0",
     "options": [
         {
             "identifier": "apiToken",
             "type": "text",
             "title": "API Token",
-            "desc": "必填项",
+            "desc": "Coze 平台的 Personal Access Token (必填，Settings -> API Tokens)",
             "textConfig": {
                 "type": "secure",
                 "height": "68",
-                "placeholderText": "pat-"
+                "placeholderText": "pat_xxxxxxxxxx"
             }
         },
         {
             "identifier": "botId",
             "type": "text",
-            "title": "BOT ID",
-            "desc": "必填项",
+            "title": "Bot ID",
+            "desc": "Coze Bot ID (必填，在 Bot URL 或设置页面获取)",
             "textConfig": {
                 "type": "secure",
                 "height": "19",
-                "placeholderText": "xxxxxxxxxxxxxxxx"
+                "placeholderText": "7xxxxxxxxxxxxxxxxx"
             }
+        },
+        {
+            "identifier": "apiEndpoint",
+            "type": "menu",
+            "title": "API 区域",
+            "defaultValue": "https://api.coze.com",
+            "menuValues": [
+                { "title": "国际区 (api.coze.com)", "value": "https://api.coze.com" },
+                { "title": "中国区 (api.coze.cn)", "value": "https://api.coze.cn" }
+            ],
+            "desc": "选择 Coze API 服务区域"
+        },
+        {
+            "identifier": "customPrompt",
+            "type": "text",
+            "title": "自定义提示词",
+            "defaultValue": "",
+            "desc": "自定义翻译提示词模板，可用变量: ${text} ${from} ${to}。留空使用默认提示词",
+            "textConfig": {
+                "type": "visible",
+                "height": "80",
+                "placeholderText": "将以下${from}文本翻译成${to}：\n\n${text}"
+            }
+        },
+        {
+            "identifier": "streamOutput",
+            "type": "menu",
+            "title": "流式输出",
+            "defaultValue": "true",
+            "menuValues": [
+                { "title": "开启", "value": "true" },
+                { "title": "关闭", "value": "false" }
+            ],
+            "desc": "是否启用流式输出，实时显示翻译结果"
         }
     ]
 }
