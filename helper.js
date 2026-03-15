@@ -20,7 +20,7 @@ function generateHeader(apiKey) {
 }
 
 /**
- * 生成请求体
+ * 生成请求体 (Coze v3 API)
  * @param {string} botId - Bot ID
  * @param {string} userText - 用户输入文本
  * @param {boolean} stream - 是否流式输出
@@ -30,8 +30,15 @@ function generateBody(botId, userText, stream) {
     return {
         bot_id: botId,
         stream: stream !== false,
-        query: userText,
-        user: INSIDE_USER_ID
+        user_id: INSIDE_USER_ID,
+        auto_save_history: false,
+        additional_messages: [
+            {
+                role: 'user',
+                content: userText,
+                content_type: 'text'
+            }
+        ]
     };
 }
 
@@ -109,52 +116,52 @@ function handleGeneralError(query, error) {
 }
 
 /**
- * 解析流式数据中的单条消息
- * @param {string} line - 单行数据
+ * 解析流式 SSE 事件 (Coze v3 格式)
+ * v3 使用 event: + data: 的标准 SSE 格式
+ * conversation.message.delta 事件的 content 是增量内容
+ * @param {string} eventType - SSE 事件类型
+ * @param {string} dataStr - SSE data 字段内容
  * @param {Object} query - Bob 查询对象
  * @param {string} currentResult - 当前累积结果
  * @returns {string} 更新后的累积结果
  */
-function parseStreamLine(line, query, currentResult) {
-    if (!line || !line.startsWith('data:')) {
-        return currentResult;
-    }
-
-    var jsonStr = line.substring(5).trim();
-    if (!jsonStr || jsonStr === '[DONE]') {
+function parseStreamEvent(eventType, dataStr, query, currentResult) {
+    if (!dataStr || dataStr === '[DONE]') {
         return currentResult;
     }
 
     try {
-        var data = JSON.parse(jsonStr);
+        var data = JSON.parse(dataStr);
 
-        // 检查是否完成
-        if (data.event === 'done') {
-            return currentResult;
-        }
-
-        // 处理消息内容
-        if (data.message && data.message.type === 'answer' && data.message.content) {
-            currentResult += data.message.content;
-            query.onStream({
-                result: {
-                    from: query.detectFrom,
-                    to: query.detectTo,
-                    toParagraphs: [currentResult]
-                }
+        if (eventType === 'conversation.message.delta') {
+            // v3 delta 事件的 content 是增量文本
+            if (data.type === 'answer' && data.content) {
+                currentResult += data.content;
+                query.onStream({
+                    result: {
+                        from: query.detectFrom,
+                        to: query.detectTo,
+                        toParagraphs: [currentResult]
+                    }
+                });
+            }
+        } else if (eventType === 'conversation.chat.failed') {
+            // 聊天失败事件
+            handleGeneralError(query, {
+                type: 'api',
+                message: data.last_error && data.last_error.msg || '聊天失败',
+                addition: dataStr
             });
-        }
-
-        // 处理错误
-        if (data.code && data.code !== 0) {
+        } else if (eventType === 'error') {
+            // 错误事件
             handleGeneralError(query, {
                 type: 'api',
                 message: data.msg || '接口返回错误',
-                addition: jsonStr
+                addition: dataStr
             });
         }
     } catch (e) {
-        // 解析失败，忽略该行
+        // 解析失败，忽略
     }
 
     return currentResult;
@@ -168,6 +175,7 @@ function parseStreamLine(line, query, currentResult) {
 function httpStreamHandler(query) {
     var finalResult = '';
     var buffer = '';
+    var currentEvent = '';
 
     return {
         streamHandler: function(streamData) {
@@ -177,22 +185,34 @@ function httpStreamHandler(query) {
 
             buffer += streamData.text;
 
-            // 按行分割处理
+            // 按行分割处理 SSE 格式: event: xxx\ndata: xxx\n\n
             var lines = buffer.split('\n');
             // 保留最后一个可能不完整的行
             buffer = lines.pop() || '';
 
             for (var i = 0; i < lines.length; i++) {
                 var line = lines[i].trim();
-                if (line) {
-                    finalResult = parseStreamLine(line, query, finalResult);
+                if (!line) {
+                    // 空行表示一个 SSE 事件结束，重置 event
+                    currentEvent = '';
+                    continue;
+                }
+                if (line.startsWith('event:')) {
+                    currentEvent = line.substring(6).trim();
+                } else if (line.startsWith('data:')) {
+                    var dataStr = line.substring(5).trim();
+                    finalResult = parseStreamEvent(currentEvent, dataStr, query, finalResult);
                 }
             }
         },
         handler: function(result) {
             // 处理缓冲区中剩余的数据
             if (buffer.trim()) {
-                finalResult = parseStreamLine(buffer.trim(), query, finalResult);
+                var remaining = buffer.trim();
+                if (remaining.startsWith('data:')) {
+                    var dataStr = remaining.substring(5).trim();
+                    finalResult = parseStreamEvent(currentEvent, dataStr, query, finalResult);
+                }
             }
 
             if (result.response && result.response.statusCode >= 400) {

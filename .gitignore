@@ -9,8 +9,5 @@
 *.swp
 *.swo
 
-# Build output
-*.bobplugin
-
 # Local settings
 .claude/
