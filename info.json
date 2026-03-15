@@ -1,6 +1,6 @@
 {
     "identifier": "com.ryan.bob.coze.translate",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "category": "translate",
     "name": "Coze 翻译",
     "summary": "使用 Coze API 进行智能翻译，支持流式输出",
