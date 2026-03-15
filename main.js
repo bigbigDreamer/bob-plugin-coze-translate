@@ -61,7 +61,7 @@ function translate(query, completion) {
 
     var requestConfig = {
         method: "POST",
-        url: apiEndpoint + "/open_api/v2/chat",
+        url: apiEndpoint + "/v3/chat",
         header: generateHeader($option.apiToken),
         body: generateBody($option.botId, prompt, useStream),
         cancelSignal: query.cancelSignal
